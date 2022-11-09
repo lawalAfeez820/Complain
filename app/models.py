@@ -57,7 +57,7 @@ class Login(SQLModel):
     secret_code: int
 
 class LoginReturn(SQLModel):
-    token: str
+    access_token: str
     token_type: str
 
 class RegisterReturn(Login):

@@ -3,7 +3,9 @@ from .database import init_db, get_session
 from . import models, auth
 from sqlmodel import Session,select
 from typing import Dict, List
+from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
+import  sqlalchemy
 
 
 
@@ -29,30 +31,31 @@ async def root():
     
     return {"message": "Welcome"}
 
-@app.post("/Register", response_model=models.RegisterReturn)
-
+@app.post("/Register", response_model=models.RegisterReturn, status_code=status.HTTP_201_CREATED)
 async def register(detail: models.Register, db: Session = Depends(get_session)):
+    try:
+        user = models.UserRecord.from_orm(detail)
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
 
-    user = models.UserRecord.from_orm(detail)
-    db.add(user)
-    await db.commit()
-    await db.refresh(user)
-
-    return user
+        return user
+    except sqlalchemy.exc.IntegrityError:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"email already exist, try using another email")
 
 @app.post("/login" , response_model=models.LoginReturn)
-async def login(login: models.Login, db: Session = Depends(get_session)):
-    query= await db.exec(select(models.UserRecord).where(models.UserRecord.secret_code == login.secret_code))
+async def login(login: OAuth2PasswordRequestForm= Depends(), db: Session = Depends(get_session)):
+    query= await db.exec(select(models.UserRecord).where(models.UserRecord.secret_code == int(login.password)))
     query = query.first()
     if not query:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Invalid credentials")
     token = auth.get_token({"user_id": query.id})
 
-    token = models.LoginReturn(token = token, token_type = "bearer")
+    token = models.LoginReturn(access_token = token, token_type = "bearer")
 
     return token
 
-@app.post("/submitComplaint", response_model=Dict)
+@app.post("/submitComplaint", response_model=Dict, status_code=status.HTTP_201_CREATED)
 
 async def sub_comp(complain: models.ComplainSubmit, db: Session = Depends(get_session), 
 user: models.UserRecord =Depends(auth.get_user)):
