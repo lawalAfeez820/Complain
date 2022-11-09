@@ -24,7 +24,7 @@ async def on_startup():
     await init_db()
 
 
-@app.get("/")
+@app.get("/", response_model=Dict)
 async def root():
     
     return {"message": "Welcome"}
@@ -40,8 +40,8 @@ async def register(detail: models.Register, db: Session = Depends(get_session)):
 
     return user
 
-@app.post("/login")
-async def login(login: models.Login, db: Session = Depends(get_session), response_model=models.LoginReturn):
+@app.post("/login" , response_model=models.LoginReturn)
+async def login(login: models.Login, db: Session = Depends(get_session)):
     query= await db.exec(select(models.UserRecord).where(models.UserRecord.secret_code == login.secret_code))
     query = query.first()
     if not query:
@@ -106,7 +106,7 @@ async def view_complain(id: int, db: Session = Depends(get_session), user: model
         return query
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Only admins or the owner of this complaint can view it")
     
-@app.delete("/resolveComplaint/{id}")
+@app.delete("/resolveComplaint/{id}", response_model=Dict)
 async def resolve(id:int, db: Session = Depends(get_session), user: models.UserRecord =Depends(auth.get_user)):
 
     if not user.is_admin:
