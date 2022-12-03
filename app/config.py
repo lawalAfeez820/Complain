@@ -11,6 +11,7 @@ class Setting(BaseSettings):
     secret_key: str
     algorithm: str
     expiry_time: int
+    
 
     class Config:
         env_file=".env"

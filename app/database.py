@@ -7,8 +7,9 @@ from sqlalchemy.orm import sessionmaker
 from .config import Setting
 
 Setting = Setting()
-
+#use in heroku
 DATABASE_URL = f"postgresql+{Setting.database_driver}://{Setting.database_username}:{Setting.database_password}@{Setting.database_host}:{Setting.database_port}/{Setting.database_name}"
+
 
 engine = create_async_engine(DATABASE_URL, future=True)
 
